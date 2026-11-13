@@ -22,12 +22,12 @@ const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 
 async function callGas(body) {
-  // text/plain にして CORS のプリフライトを避ける
-  const res = await fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
+  const q = new URLSearchParams({
+    action: body.action,
+    token: body.token || '',
+    leadMin: String(body.leadMin || '')
   });
+  const res = await fetch(GAS_URL + '?' + q.toString());
   const json = await res.json();
   if (!json.ok) throw new Error(json.error || 'server error');
   return json;
