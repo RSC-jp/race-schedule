@@ -2,7 +2,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
 import { getMessaging, getToken } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js';
 
-export const GAS_URL = 'https://script.google.com/macros/s/AKfycbwBXztZaboDr0nYFJaxD7bKQT1pGNj27w09_vhhPGJ1M7UB-TuoltfWCA14r-ne68K0lw/exec';
+export const GAS_URL = 'https://script.google.com/macros/s/AKfycbxem9MXozVm3KoYY8IziCfRDs7gZ34M3l0ITsyo8p-EcWtOJf-2GS0AYbiwm8Bij-su/exec';
 
 // firebase-messaging-sw.js と同じ値
 const firebaseConfig = {
