@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Race Event Live Schedule</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="theme-color" content="#111318">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Race Schedule">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f3f4f6;
+      color: #17181b;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    /* HEADER */
+    .header {
+      background: #111318;
+      color: white;
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .event-label {
+      font-size: 12px;
+      letter-spacing: .12em;
+      opacity: .6;
+    }
+
+    .event-title {
+      font-size: 28px;
+      font-weight: 800;
+      margin-top: 5px;
+    }
+
+    .clock {
+      margin-top: 8px;
+      font-size: 18px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* PUSH SETTINGS */
+    .push-card {
+      background: white;
+      border-radius: 18px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      border: 1px solid #e2e4e7;
+    }
+
+    .push-title {
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    #push-panel {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    #push-panel select,
+    #push-panel button {
+      font: inherit;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #cfd2d6;
+      background: #fff;
+    }
+
+    #push-panel button {
+      background: #111318;
+      color: #fff;
+      border-color: #111318;
+      font-weight: 700;
+    }
+
+    #push-panel button#push-off {
+      background: #fff;
+      color: #444;
+      border-color: #cfd2d6;
+    }
+
+    #push-panel button[hidden] {
+      display: none;
+    }
+
+    #push-msg {
+      color: #555;
+      font-size: 13px;
+    }
+
+    .push-hint {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fff8e1;
+      color: #6b5200;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* CURRENT */
+    .current-card {
+      background: white;
+      border-radius: 18px;
+      padding: 25px;
+      margin-bottom: 16px;
+      border: 1px solid #e2e4e7;
+    }
+
+    .live-badge {
+      display: inline-block;
+      background: #e53935;
+      color: white;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .next-badge {
+      display: inline-block;
+      background: #777;
+      color: white;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .current-name {
+      margin-top: 13px;
+      font-size: 30px;
+      font-weight: 800;
+    }
+
+    .current-info {
+      margin-top: 5px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .current-time {
+      margin-top: 12px;
+      font-size: 18px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .countdown {
+      margin-top: 16px;
+      font-size: 44px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .countdown-label {
+      color: #777;
+      font-size: 12px;
+    }
+
+    /* NEXT */
+    .next {
+      border-top: 1px solid #e5e5e5;
+      margin-top: 22px;
+      padding-top: 18px;
+    }
+
+    .next-label {
+      color: #777;
+      font-size: 12px;
+    }
+
+    .next-name {
+      margin-top: 4px;
+      font-size: 21px;
+      font-weight: 800;
+    }
+
+    .next-time {
+      color: #666;
+      margin-top: 3px;
+    }
+
+    .next-countdown {
+      margin-top: 7px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* SCHEDULE */
+    .schedule {
+      background: white;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid #e2e4e7;
+    }
+
+    .schedule-title {
+      padding: 18px 20px;
+      font-size: 18px;
+      font-weight: 800;
+      border-bottom: 1px solid #eee;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 130px 1fr 100px;
+      gap: 12px;
+      align-items: center;
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+    }
+
+    .row.live {
+      background: #fff0f0;
+      border-left: 5px solid #e53935;
+      padding-left: 15px;
+    }
+
+    .row.finished {
+      opacity: .4;
+    }
+
+    .time {
+      font-variant-numeric: tabular-nums;
+      color: #555;
+    }
+
+    .name {
+      font-weight: 700;
+    }
+
+    .info {
+      color: #777;
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .status {
+      text-align: right;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .status-live {
+      color: #e53935;
+    }
+
+    .status-next {
+      color: #1976d2;
+    }
+
+    .status-finished {
+      color: #999;
+    }
+
+    /* MOBILE */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+
+      .header {
+        padding: 18px;
+      }
+
+      .event-title {
+        font-size: 22px;
+      }
+
+      .current-card {
+        padding: 18px;
+      }
+
+      .current-name {
+        font-size: 25px;
+      }
+
+      .countdown {
+        font-size: 36px;
+      }
+
+      .row {
+        grid-template-columns: 90px 1fr;
+      }
+
+      .status {
+        grid-column: 2;
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="event-label">
+        RACE EVENT
+      </div>
+
+      <div class="event-title">
+        レースイベント・タイムスケジュール
+      </div>
+
+      <div class="clock" id="clock">
+        現在時刻 --:--:--
+      </div>
+    </div>
+
+    <!-- PUSH SETTINGS -->
+    <div class="push-card">
+      <div class="push-title">🔔 セッション開始の通知</div>
+      <div id="push-panel"></div>
+      <div class="push-hint" id="pushHint">
+        iPhoneで通知を使うには、共有ボタン →「ホーム画面に追加」して、
+        追加したアイコンから開き直してください。
+      </div>
+    </div>
+
+    <!-- CURRENT SESSION -->
+    <div class="current-card">
+      <div id="badge" class="next-badge">
+        LOADING
+      </div>
+
+      <div class="current-name" id="currentName">
+        読み込み中
+      </div>
+
+      <div class="current-info" id="currentInfo"></div>
+
+      <div class="current-time" id="currentTime"></div>
+
+      <div class="countdown" id="countdown">
+        --:--
+      </div>
+
+      <div class="countdown-label" id="countdownLabel"></div>
+
+      <!-- NEXT -->
+      <div class="next">
+        <div class="next-label">
+          NEXT SESSION
+        </div>
+
+        <div class="next-name" id="nextName">-</div>
+
+        <div class="next-time" id="nextTime"></div>
+
+        <div class="next-countdown" id="nextCountdown"></div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="schedule">
+      <div class="schedule-title">
+        本日のスケジュール
+      </div>
+
+      <div id="scheduleList">
+        読み込み中…
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { fetchSchedule, mountPushPanel } from './push-client.js';
+
+    let schedule = [];
+    let serverOffset = 0;
+
+    /* =========================
+       PUSH PANEL
+    ========================= */
+
+    mountPushPanel(document.getElementById("push-panel"));
+
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      navigator.standalone === true;
+
+    if (isIOS && !isStandalone) {
+      document.getElementById("pushHint").style.display = "block";
+    }
+
+    /* =========================
+       Apps Script (JSON API)
+    ========================= */
+
+    async function loadSchedule() {
+      try {
+        const res = await fetchSchedule();
+
+        schedule = res.data || [];
+
+        // サーバー時刻との差を、スケジュール取得のたびに更新
+        if (res.serverTime) {
+          serverOffset = res.serverTime - Date.now();
+        }
+
+        render();
+      } catch (error) {
+        // すでに表示できているスケジュールがあれば、そのまま残す
+        if (!schedule.length) {
+          document.getElementById("scheduleList").textContent =
+            "スケジュール取得エラー";
+        }
+      }
+    }
+
+    /* =========================
+       TIME
+    ========================= */
+
+    function now() {
+      return new Date(Date.now() + serverOffset);
+    }
+
+    function dateString(d) {
+      return (
+        d.getFullYear() +
+        "-" +
+        String(d.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(d.getDate()).padStart(2, "0")
+      );
+    }
+
+    function timeMinutes(time) {
+      const p = time.split(":");
+      return Number(p[0]) * 60 + Number(p[1]);
+    }
+
+    function currentMinutes() {
+      const d = now();
+
+      return (
+        d.getHours() * 60 +
+        d.getMinutes() +
+        d.getSeconds() / 60
+      );
+    }
+
+    function secondsFromTime(time) {
+      const p = time.split(":");
+      return Number(p[0]) * 3600 + Number(p[1]) * 60;
+    }
+
+    function formatCountdown(seconds) {
+      seconds = Math.max(0, Math.floor(seconds));
+
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+
+      return (
+        String(h).padStart(2, "0") +
+        ":" +
+        String(m).padStart(2, "0") +
+        ":" +
+        String(s).padStart(2, "0")
+      );
+    }
+
+    /* =========================
+       TODAY
+    ========================= */
+
+    function todaySchedule() {
+      const today = dateString(now());
+
+      return schedule
+        .filter(x => x.date === today)
+        .sort((a, b) => timeMinutes(a.start) - timeMinutes(b.start));
+    }
+
+    /* =========================
+       CURRENT
+    ========================= */
+
+    function currentSession(list) {
+      const current = currentMinutes();
+
+      return list.find(x => {
+        const start = timeMinutes(x.start);
+        const end = timeMinutes(x.end);
+
+        return current >= start && current < end;
+      });
+    }
+
+    /* =========================
+       NEXT
+    ========================= */
+
+    function nextSession(list) {
+      const current = currentMinutes();
+
+      return list.find(x => timeMinutes(x.start) > current);
+    }
+
+    /* =========================
+       MAIN RENDER
+    ========================= */
+
+    function render() {
+      const d = now();
+
+      document.getElementById("clock").textContent =
+        "現在時刻 " +
+        [
+          String(d.getHours()).padStart(2, "0"),
+          String(d.getMinutes()).padStart(2, "0"),
+          String(d.getSeconds()).padStart(2, "0")
+        ].join(":");
+
+      const list = todaySchedule();
+
+      if (!list.length) {
+        showNoSchedule();
+        return;
+      }
+
+      const current = currentSession(list);
+      const next = nextSession(list);
+
+      if (current) {
+        showLive(current, next);
+      } else {
+        showWaiting(next);
+      }
+
+      renderSchedule(list, current, next);
+    }
+
+    /* =========================
+       LIVE
+    ========================= */
+
+    function showLive(current, next) {
+      const badge = document.getElementById("badge");
+
+      badge.className = "live-badge";
+      badge.textContent = "● LIVE";
+
+      // セッション名とクラス名を横並びに表示
+      document.getElementById("currentName").textContent =
+        [current.name, current.className]
+          .filter(Boolean)
+          .join(" / ");
+
+      // カテゴリと会場を補足表示
+      document.getElementById("currentInfo").textContent =
+        [current.category, current.venue]
+          .filter(Boolean)
+          .join(" / ");
+
+      document.getElementById("currentTime").textContent =
+        current.start + " ～ " + current.end;
+
+      const d = now();
+
+      const nowSeconds =
+        d.getHours() * 3600 +
+        d.getMinutes() * 60 +
+        d.getSeconds();
+
+      const endSeconds = secondsFromTime(current.end);
+
+      document.getElementById("countdown").textContent =
+        formatCountdown(endSeconds - nowSeconds);
+
+      document.getElementById("countdownLabel").textContent =
+        "残り時間";
+
+      showNext(next);
+    }
+
+    /* =========================
+       WAITING
+    ========================= */
+
+    function showWaiting(next) {
+      const badge = document.getElementById("badge");
+
+      badge.className = "next-badge";
+      badge.textContent = "NEXT";
+
+      document.getElementById("currentName").textContent =
+        "現在セッションなし";
+
+      document.getElementById("currentInfo").textContent = "";
+      document.getElementById("currentTime").textContent = "";
+
+      document.getElementById("countdown").textContent =
+        next ? getTimeUntil(next.start) : "--:--";
+
+      document.getElementById("countdownLabel").textContent =
+        next ? "次のセッション開始まで" : "";
+
+      showNext(next);
+    }
+
+    /* =========================
+       NEXT SESSION
+    ========================= */
+
+    function showNext(next) {
+      if (!next) {
+        document.getElementById("nextName").textContent =
+          "本日の全セッション終了";
+
+        document.getElementById("nextTime").textContent = "";
+        document.getElementById("nextCountdown").textContent = "";
+
+        return;
+      }
+
+      // セッション名とクラス名を横並びに表示
+      document.getElementById("nextName").textContent =
+        [next.name, next.className]
+          .filter(Boolean)
+          .join(" / ");
+
+      document.getElementById("nextTime").textContent =
+        next.start + " ～ " + next.end;
+
+      document.getElementById("nextCountdown").textContent =
+        "開始まで " + getTimeUntil(next.start);
+    }
+
+    /* =========================
+       UNTIL NEXT
+    ========================= */
+
+    function getTimeUntil(time) {
+      const d = now();
+
+      const currentSeconds =
+        d.getHours() * 3600 +
+        d.getMinutes() * 60 +
+        d.getSeconds();
+
+      const targetSeconds = secondsFromTime(time);
+
+      return formatCountdown(targetSeconds - currentSeconds);
+    }
+
+    /* =========================
+       NO SCHEDULE
+    ========================= */
+
+    function showNoSchedule() {
+      document.getElementById("badge").className = "next-badge";
+      document.getElementById("badge").textContent = "OFF";
+
+      document.getElementById("currentName").textContent =
+        "本日のスケジュールはありません";
+
+      document.getElementById("currentInfo").textContent = "";
+      document.getElementById("currentTime").textContent = "";
+      document.getElementById("countdown").textContent = "--:--";
+      document.getElementById("countdownLabel").textContent = "";
+
+      document.getElementById("nextName").textContent = "-";
+      document.getElementById("nextTime").textContent = "";
+      document.getElementById("nextCountdown").textContent = "";
+
+      document.getElementById("scheduleList").innerHTML =
+        "<div style='padding:20px;color:#777'>" +
+        "本日のスケジュールはありません。" +
+        "</div>";
+    }
+
+    /* =========================
+       SCHEDULE
+    ========================= */
+
+    function renderSchedule(list, current, next) {
+      const currentTime = currentMinutes();
+
+      document.getElementById("scheduleList").innerHTML =
+        list.map(item => {
+          let status = "";
+          let rowClass = "row";
+
+          const start = timeMinutes(item.start);
+          const end = timeMinutes(item.end);
+
+          if (current && item === current) {
+            rowClass += " live";
+
+            status =
+              '<span class="status-live">' +
+              "● LIVE" +
+              "</span>";
+          } else if (next && item === next) {
+            status =
+              '<span class="status-next">' +
+              "NEXT" +
+              "</span>";
+          } else if (currentTime >= end) {
+            rowClass += " finished";
+
+            status =
+              '<span class="status-finished">' +
+              "終了" +
+              "</span>";
+          }
+
+          return `
+            <div class="${rowClass}">
+              <div class="time">
+                ${escapeHtml(item.start)}–${escapeHtml(item.end)}
+              </div>
+
+              <div>
+                <div class="name">
+                  ${escapeHtml(
+                    [item.name, item.className]
+                      .filter(Boolean)
+                      .join(" / ")
+                  )}
+                </div>
+
+                <div class="info">
+                  ${escapeHtml(item.category)}
+                </div>
+              </div>
+
+              <div class="status">
+                ${status}
+              </div>
+            </div>
+          `;
+        }).join("");
+    }
+
+    /* =========================
+       ESCAPE
+    ========================= */
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    /* =========================
+       INITIALIZE
+    ========================= */
+
+    loadSchedule();
+
+    // 時計・カウントダウンを1秒ごとに更新
+    setInterval(render, 1000);
+
+    // スプレッドシート(とサーバー時刻)を1分ごとに再取得
+    setInterval(loadSchedule, 60 * 1000);
+  </script>
+</body>
+</html>
