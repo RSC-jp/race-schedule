@@ -23,7 +23,7 @@ const PUSH = {
   WINDOW_MIN: 2,           // トリガーのズレを吸収する幅(分)
   HORIZON_MIN: 31,         // これより先のセッションは見ない
   DEDUP_SEC: 6 * 60 * 60,  // 重複送信防止の保持時間
-  APP_URL: 'https://YOUR_NAME.github.io/YOUR_REPO/'  // 通知タップ時に開くURL
+  APP_URL: 'https://RSC-jp.github.io/race-schedule/'  // 通知タップ時に開くURL
 };
 
 /* ===================== API ===================== */
