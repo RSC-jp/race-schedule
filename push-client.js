@@ -1,6 +1,6 @@
 // push-client.js ― index.html から <script type="module" src="push-client.js"> で読み込む
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-import { getMessaging, getToken } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js';
+import { getMessaging, getToken, onMessage } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js';
 
 export const GAS_URL = 'https://script.google.com/macros/s/AKfycbxem9MXozVm3KoYY8IziCfRDs7gZ34M3l0ITsyo8p-EcWtOJf-2GS0AYbiwm8Bij-su/exec';
 
@@ -53,6 +53,7 @@ export async function enablePush(leadMin) {
   await callGas({ action: 'subscribe', token, leadMin });
   localStorage.setItem(LS_TOKEN, token);
   localStorage.setItem(LS_LEAD, String(leadMin));
+  startForegroundListener(); 
 }
 
 export async function changeLead(leadMin) {
@@ -114,3 +115,60 @@ export async function fetchSchedule() {
   if (!json.ok) throw new Error(json.error);
   return json;   // { data: [...], serverTime, timezone }
 }
+/* ===== アプリを開いている間の通知(フォアグラウンド) ===== */
+
+let fgStarted = false;
+
+function showToast(title, body) {
+  const el = document.createElement('div');
+  el.style.cssText =
+    'position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);' +
+    'z-index:9999;background:#111318;color:#fff;border-radius:14px;padding:14px 16px;' +
+    'box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:14px;line-height:1.5;';
+  const t = document.createElement('div');
+  t.style.fontWeight = '800';
+  t.textContent = title;
+  const b = document.createElement('div');
+  b.style.cssText = 'opacity:.85;margin-top:2px;';
+  b.textContent = body;
+  el.append(t, b);
+  el.onclick = () => el.remove();
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 10000);
+}
+
+async function startForegroundListener() {
+  if (fgStarted) return;
+  try {
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    if (!localStorage.getItem(LS_TOKEN)) return;
+
+    const reg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+    const messaging = getMessaging(initializeApp(firebaseConfig));
+
+    onMessage(messaging, (payload) => {
+      const d = payload.data || {};
+      const title = d.title || 'Race Event';
+      const body = d.body || '';
+
+      showToast(title, body);                       // 画面上部のバナー
+      if (navigator.vibrate) navigator.vibrate(200);
+
+      // 端末の通知としても表示(同じtagは上書きされる)
+      reg.showNotification(title, {
+        body: body,
+        icon: './icon-192.png',
+        tag: d.tag || undefined,
+        data: { url: d.url || './' }
+      }).catch(() => {});
+    });
+
+    fgStarted = true;
+  } catch (e) {
+    console.warn('foreground listener error', e);
+  }
+}
+
+// ページを開いたときに開始
+startForegroundListener();
